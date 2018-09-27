@@ -1,0 +1,89 @@
+<html>
+  <head> </head>
+      
+  <body>
+    <h1>DEMO: ALPR</h1>
+    <p id="status">TensorFlow.JS is loading...</p>
+    <p id="status1">OpenCV.JS is loading...</p>
+    <p>Input image</p>
+    <img src="Images/KL10AW2814.jpg" id="imgSource">
+    <script>
+      function onTfJsReady(){
+        document.getElementById('status').innerHTML = 'TensorFlow.JS is ready.';
+      }
+      function onOpenCvJsReady(){
+        document.getElementById('status1').innerHTML = 'OpenCV.JS is ready.';
+      }
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@0.13.0" onload="onTfJsReady();"> </script>
+    <script src="openCV-js-master/openCV-js-master/opencv.js" onload="onOpenCvJsReady();"> </script>
+  </body>
+
+  <script>
+    let letters = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'P', 'R', 'T', 'U', 'W', 'X', 'Y', 'Z', ''];
+    let dsize = new cv.Size(128, 64);
+    let image = cv.imread(imgSource); 
+    cv.cvtColor(image, image, cv.COLOR_BGR2GRAY, 0);
+    cv.resize(image, image, dsize, cv.INTER_AREA);
+    cv.transpose(image, image);
+    //cv.imshow('imgOut', image);
+    console.log('image size: ' + image.size().width + '*' + image.size().height);
+    image = image.data;
+    image = tf.tensor2d(image, [128, 64]);
+    image = tf.cast(image,'float32');
+    image = tf.div(image, tf.scalar(255));
+    image = tf.expandDims(image, -1);
+    image = tf.expandDims(image, 0);  
+    console.log("Model loading...");
+    
+    function filterr(array){
+      var pos = [];
+      var new_array = [];
+      for(var i=0; i<=((array.length)-1); i++){
+        if(array[i] == array[i+1]){
+          pos[pos.length] = i+1;
+        }
+      }
+      for(var i=0; i<=((array.length)-1); i++){
+        if(pos.includes(i)){
+          continue;
+        }
+        else{
+          new_array[new_array.length] = array[i];
+        }
+      }
+      return new_array;
+    }
+    async function predText(){
+      const model = await tf.loadModel("model4jszp/model.json");
+      console.log("Model loaded.");
+      var netoutValue = model.predict(image);
+      netoutValue.print(true);
+      console.log(netoutValue.shape);
+      netoutValue = tf.squeeze(netoutValue);
+      console.log(netoutValue.shape);
+      var ret = [];
+      var outBest = [];
+      var outStr = "";
+      netoutValue = tf.slice(netoutValue, [2, 0], [30, 34]);
+      console.log(netoutValue.shape);
+      netoutValue = tf.squeeze(netoutValue, 0);
+      console.log(netoutValue.shape);
+      outBest = tf.argMax(netoutValue, 1);
+      console.log(outBest.shape);
+      outBest = outBest.dataSync();
+      console.log(outBest);
+      outBest = filterr(outBest);
+      console.log(outBest);
+      for(let c of outBest){
+        if(c<letters.length){
+          outStr = outStr+letters[c];
+        }
+      }
+      ret[ret.length] = outStr;
+      console.log(ret);
+      window.alert(ret);
+    }
+    predText();
+  </script>
+</html>
