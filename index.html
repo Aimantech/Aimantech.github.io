@@ -55,7 +55,7 @@
       return new_array;
     }
     async function predText(){
-      const model = await tf.loadModel("model4jszp/model.json");
+      const model = await tf.loadModel("new_tfmodel/model.json");
       console.log("Model loaded.");
       var netoutValue = model.predict(image);
       netoutValue.print(true);
